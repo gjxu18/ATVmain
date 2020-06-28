@@ -49,9 +49,7 @@ end
 % Bsd=integral(fun,0,Ts,'ArrayValued',true)*Bs;
 % Dsd=integral(fun,0,Ts,'ArrayValued',true)*Ds;
 %% 等级路面 dotx=Aw*x+Iw*w
-av=2*pi*0.01*car_speed;n0=0.1;
-G0=16284*10^(-6); %F级路面16284 D级1024 C级256 E级4096
-
+av=2*pi*0.01*car_speed;n0=0.1;G0=16284*10^(-6); %F级路面16284 D级1024 C级256 E级4096
 Aw=zeros(4,4);Aw(1,1)=-av;Aw(2,2)=-av;Aw(3,3)=-av;Aw(4,4)=-av;
 Iw=eye(4);Iw(1,1)=2*pi*n0*sqrt(G0*car_speed);Iw(2,2)=2*pi*n0*sqrt(G0*car_speed);
 Iw(3,3)=2*pi*n0*sqrt(G0*car_speed);Iw(4,4)=2*pi*n0*sqrt(G0*car_speed);
@@ -61,36 +59,15 @@ y_n=var(noise1);
 noise2=[zeros(xdelay,1);noise1];
 
 noise_f=[tout' noise1];
-noise_r=[tout' noise2(1:xstop)];
-
-figure('name','class road')
-subplot(2,2,1)
-plot(tout,noise_f(:,2));
-subplot(2,2,2)
-plot(tout,noise_f(:,2));
-subplot(2,2,3)
-plot(tout,noise_r(:,2));
-subplot(2,2,4)
-plot(tout,noise_r(:,2));
+noise_r=[tout' noise2(1:xstop)'];
 %% sin波形路面
 a_max=0.1342;
 sin_f=a_max*sin(2*pi/6*tout');
 sin_r=[zeros(xdelay,1);sin_f];
-
 sin_f=[tout' sin_f];
-sin_r=[tout' sin_r(1:xstop)];
-
-figure('name','sin road')
-subplot(2,2,1)
-plot(tout,sin_f(:,2));
-subplot(2,2,2)
-plot(tout,sin_f(:,2));
-subplot(2,2,3)
-plot(tout,sin_r(:,2));
-subplot(2,2,4)
-plot(tout,sin_r(:,2));
+sin_r=[tout' sin_f(1:xstop)];
 %% Bump Road
-Abump=0.1342; %坑、包的幅值
+Abump=0.13; %坑、包的幅值
 Lbump=3;    %坑、包的长度
 t_hc=3;     %缓冲时间
 xbump_t=0:Ts:(Lbump/car_speed);
