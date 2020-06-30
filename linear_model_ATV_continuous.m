@@ -50,13 +50,12 @@ end
 % Dsd=integral(fun,0,Ts,'ArrayValued',true)*Ds;
 %% 等级路面 dotx=Aw*x+Iw*w
 av=2*pi*0.01*car_speed;n0=0.1;
-G0=16284*10^(-6); %F级路面16284 D级1024 C级256 E级4096
-
+G0=1024*10^(-6); %F级路面16284 D级1024 C级256 E级4096
 Aw=zeros(4,4);Aw(1,1)=-av;Aw(2,2)=-av;Aw(3,3)=-av;Aw(4,4)=-av;
 Iw=eye(4);Iw(1,1)=2*pi*n0*sqrt(G0*car_speed);Iw(2,2)=2*pi*n0*sqrt(G0*car_speed);
 Iw(3,3)=2*pi*n0*sqrt(G0*car_speed);Iw(4,4)=2*pi*n0*sqrt(G0*car_speed);
 Iw_0=Iw^(-1);
-noise1=wgn(xstop,1,5,'linear');
+noise1=wgn(xstop,1,0.1,'linear');
 y_n=var(noise1);
 noise2=[zeros(xdelay,1);noise1];
 
@@ -180,7 +179,22 @@ Cu(2,20)=1;
 Cu(3,21)=1;
 Cu(4,22)=1;
 %% mpc
-refer=zeros(14,1);
+Cmpc=zeros(3,14);
+Cmpc(1,4)=1;
+Cmpc(2,5)=1;
+Cmpc(3,6)=1;
+% Cmpc(4,4)=1;
+% Cmpc(5,5)=1;
+% Cmpc(6,6)=1;
+% Cmpc(1,4)=1;
+% Cmpc(2,5)=1;
+% Cmpc(3,6)=1;
+refer=zeros(3,1);
+Cpcu=zeros(4,22); %得到u'
+Cmpcu(1,19)=1;
+Cmpcu(2,20)=1;
+Cmpcu(3,21)=1;
+Cmpcu(4,22)=1;
 
 
 
