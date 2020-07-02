@@ -34,6 +34,7 @@ disp('The system is controllable.')
 else 
 disp('The system is not controllable.')
 end
+
 %% augmented matrix
 % S=zeros(2,SXp);
 % S(1,5)=1;S(2,6)=1;
@@ -88,6 +89,7 @@ subplot(2,2,3)
 plot(tout,sin_r(:,2));
 subplot(2,2,4)
 plot(tout,sin_r(:,2));
+
 %% Bump Road
 Abump=0.1342; %坑、包的幅值
 Lbump=3;    %坑、包的长度
@@ -179,8 +181,8 @@ Cu(2,20)=1;
 Cu(3,21)=1;
 Cu(4,22)=1;
 %% mpc
-Cmpc=zeros(3,14);
-Cmpc(1,4)=1;
+Cmpc=zeros(3,22);
+Cmpc(1,1)=1;
 Cmpc(2,5)=1;
 Cmpc(3,6)=1;
 % Cmpc(4,4)=1;
@@ -195,8 +197,32 @@ Cmpcu(1,19)=1;
 Cmpcu(2,20)=1;
 Cmpcu(3,21)=1;
 Cmpcu(4,22)=1;
-
-
-
+%% kalman
+% Q=eye()
+ob=obsv(A,C);
+obb=rank(ob);
+[Abar,Bbar,Cbar,T,k] = obsvf(A,B,C);
+sum(k)
+Ckalman=zeros(9,14);
+Ckalman(1,1)=1;
+Ckalman(2,2)=1;
+Ckalman(3,3)=1;
+Ckalman(4,5)=1;
+Ckalman(5,6)=1;
+Ckalman(6,7)=1;
+Ckalman(7,8)=1;
+Ckalman(8,9)=1;
+Ckalman(9,10)=1;
+Ckalman=Ckalman*C;
+Ckalman4=zeros(8,26);
+Ckalman4(1,15)=1;
+Ckalman4(2,16)=1;
+Ckalman4(3,17)=1;
+Ckalman4(4,18)=1;
+Ckalman4(5,19)=1;
+Ckalman4(6,20)=1;
+Ckalman4(7,21)=1;
+Ckalman4(8,22)=1;
+Ckalman=[Ckalman;Ckalman4];
 
 

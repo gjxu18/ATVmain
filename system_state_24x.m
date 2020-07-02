@@ -35,7 +35,7 @@ msf=parameter(19); msr=parameter(20); cfu=parameter(21); dru=parameter(22);
 car_speed=parameter(40);
 %%
 zb1=x4-a*x5+1/2*Bf*x6;
-zb2=x4-a*x5-1/2*Br*x6;
+zb2=x4-a*x5-1/2*Bf*x6;
 zb3=x4+b*x5+1/2*Br*x6;
 zb4=x4+b*x5-1/2*Br*x6;
 %%
@@ -114,6 +114,7 @@ y14=x26-x14;
 Y=[y1;y2;y3;y4;y5;y6;y7;y8;y9;y10;y11;y12;y13;y14];
 C34=jacobian(Y,x);
 C34 = eval(C34);
+
 
 
 % u12=zb1-x11;
