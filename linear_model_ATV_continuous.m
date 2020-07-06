@@ -51,12 +51,12 @@ end
 % Dsd=integral(fun,0,Ts,'ArrayValued',true)*Ds;
 %% 等级路面 dotx=Aw*x+Iw*w
 av=2*pi*0.01*car_speed;n0=0.1;
-G0=1024*10^(-6); %F级路面16284 D级1024 C级256 E级4096
+G0=16284*10^(-6); %F级路面16284 D级1024 C级256 E级4096
 Aw=zeros(4,4);Aw(1,1)=-av;Aw(2,2)=-av;Aw(3,3)=-av;Aw(4,4)=-av;
 Iw=eye(4);Iw(1,1)=2*pi*n0*sqrt(G0*car_speed);Iw(2,2)=2*pi*n0*sqrt(G0*car_speed);
 Iw(3,3)=2*pi*n0*sqrt(G0*car_speed);Iw(4,4)=2*pi*n0*sqrt(G0*car_speed);
 Iw_0=Iw^(-1);
-noise1=wgn(xstop,1,0.1,'linear');
+noise1=wgn(xstop,1,30,'linear');
 y_n=var(noise1);
 noise2=[zeros(xdelay,1);noise1];
 
@@ -76,9 +76,11 @@ plot(tout,noise_r(:,2));
 a_max=0.1342;
 sin_f=a_max*sin(2*pi/6*tout');
 sin_r=[zeros(xdelay,1);sin_f];
+sin_0=0.*tout';
 
 sin_f=[tout' sin_f];
 sin_r=[tout' sin_r(1:xstop)];
+sin_0=[tout' sin_0];
 
 figure('name','sin road')
 subplot(2,2,1)
@@ -172,7 +174,7 @@ Q=C'*Q*C;
 % K=R^(-1)*B'*P;
 Ac=A-B*K;
 % Pk=[P11 P12];      %论文和上边一样的
-% K=R^(-1)*Bp'*Pk;
+% K1=R^(-1)*Bp'*Pk;
 % Ac=A-B*K;
 cun=size(Ac);
 Cu=zeros(4,cun(1)); %得到u'
@@ -180,11 +182,21 @@ Cu(1,19)=1;
 Cu(2,20)=1;
 Cu(3,21)=1;
 Cu(4,22)=1;
+%% lqg
+Dn=zeros(14,8);
+% Qn=35.*eye(4);   0704
+% Rn=0.001.*eye(14);
+Qn=500.*eye(4); 
+Rn=0.0001.*eye(14);
+Nn=zeros(4,14);
+sys=ss(A,[B D],C,Dn);
+[kest,L,P]=kalman(sys,Qn,Rn,Nn);
+regulator=lqgreg(kest,K);
 %% mpc
-Cmpc=zeros(3,22);
-Cmpc(1,1)=1;
+Cmpc=zeros(3,26);
+Cmpc(1,4)=1; %其它有用
 Cmpc(2,5)=1;
-Cmpc(3,6)=1;
+Cmpc(3,6)=1; 
 % Cmpc(4,4)=1;
 % Cmpc(5,5)=1;
 % Cmpc(6,6)=1;
@@ -192,12 +204,22 @@ Cmpc(3,6)=1;
 % Cmpc(2,5)=1;
 % Cmpc(3,6)=1;
 refer=zeros(3,1);
-Cpcu=zeros(4,22); %得到u'
+Cmpcu=zeros(4,22); %得到u'
 Cmpcu(1,19)=1;
 Cmpcu(2,20)=1;
 Cmpcu(3,21)=1;
 Cmpcu(4,22)=1;
 %% kalman
+Dn=zeros(14,8);
+% Qn=35.*eye(4);   0704
+% Rn=0.001.*eye(14);
+Qn=1.*eye(4); 
+Rn=0.00001.*eye(14);
+Nn=zeros(4,14);
+sys=ss(A,[B D],C,Dn);
+[kest,L,P]=kalman(sys,Qn,Rn,Nn);
+
+%%
 % Q=eye()
 ob=obsv(A,C);
 obb=rank(ob);
@@ -224,5 +246,4 @@ Ckalman4(6,20)=1;
 Ckalman4(7,21)=1;
 Ckalman4(8,22)=1;
 Ckalman=[Ckalman;Ckalman4];
-
 

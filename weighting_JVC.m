@@ -1,7 +1,7 @@
 function [ro]=weighting_JVC
 syms ro1 ro2 ro3 ro4 ro5 ro6 ro7 ro8 ro9 ro10 ro11 ro12 ro13 ro14 ro15
 ro=[ro1,ro2,ro3,ro4,ro5,ro6,ro7,ro8,ro9,ro10,ro11,ro12,ro13,ro14,ro15]; 
-%% 0701
+%% F class lqg ok 0704
 ro1 = 0;    %ddz
 ro2 = 0;      %ddtheta
 ro3 = 0 ;    %ddphi
@@ -12,8 +12,34 @@ ro7 = 1;      %tire deflection
 ro8 = ro7;ro9=ro7;ro10=ro7;    
 ro11 = 1;     %suspension deflection
 ro12 = ro11;ro13=ro11;ro14=ro11;
-ro15 = 1.5;      %u
+ro15 = 1.3;      %u
 ro = eval(ro);
+%% F class lqr ok
+% ro1 = 0;    %ddz
+% ro2 = 0;      %ddtheta
+% ro3 = 0 ;    %ddphi
+% ro4 = 11;    %zb
+% ro5 = 11;     %theta       
+% ro6 = 11;      %phi
+% ro7 = 1;      %tire deflection
+% ro8 = ro7;ro9=ro7;ro10=ro7;    
+% ro11 = 1;     %suspension deflection
+% ro12 = ro11;ro13=ro11;ro14=ro11;
+% ro15 = 1.45;      %u
+% ro = eval(ro);
+%% 0704 bump sin ok
+% ro1 = 0;    %ddz
+% ro2 = 0;      %ddtheta
+% ro3 = 0 ;    %ddphi
+% ro4 = 11;    %zb
+% ro5 = 11;     %theta       
+% ro6 = 11;      %phi
+% ro7 = 1;      %tire deflection
+% ro8 = ro7;ro9=ro7;ro10=ro7;    
+% ro11 = 1;     %suspension deflection
+% ro12 = ro11;ro13=ro11;ro14=ro11;
+% ro15 = 1.5;      %u
+% ro = eval(ro);
 %% 0626 roll ok
 % ro1 = 0;    %ddz
 % ro2 = 0;      %ddtheta
