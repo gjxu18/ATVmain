@@ -120,30 +120,32 @@ bump_rl=[tout' xbump_rl'];
 bump_fr=[tout' xbump_fr'];
 bump_rr=[tout' xbump_rr'];
 %% 3D road y以mm为单位
-% ybump=0:1:2000;
-% zbump=zeros(900+1,xbump_size);
-% for i=ybump  
-%     if i<300
-%         zbump(i+1,:)=(Abump*i/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-%     elseif i>=300 && i<600
-%         zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-%     elseif i>=600 && i<900 
-%         zbump(i+1,:)=(900-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-%     elseif i>=900 && i<1100
-%         zbump(i+1,:)=0.*xbump_t;
-%     elseif i>=1100 && i<1400
-%         zbump(i+1,:)=(Abump*(i-1100)/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-%     elseif i>=1400 && i<1700
-%         zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-%     else 
-%         zbump(i+1,:)=(2000-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-%     end
-% end
-% zbump=[zeros(2001,3/Ts) zbump -1.*zbump zeros(2001,xstop-2*xbump_size-3/Ts)];
-% 
-% figure ('name','3d road')
-% surf(tout,ybump,zbump);
-% mesh(tout,ybump,zbump);
+ybump=0:1:2000;
+zbump=zeros(900+1,xbump_size);
+for i=ybump  
+    if i<300
+        zbump(i+1,:)=(Abump*i/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+    elseif i>=300 && i<600
+        zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+    elseif i>=600 && i<900 
+        zbump(i+1,:)=(900-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+    elseif i>=900 && i<1100
+        zbump(i+1,:)=0.*xbump_t;
+    elseif i>=1100 && i<1400
+        zbump(i+1,:)=(Abump*(i-1100)/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+    elseif i>=1400 && i<1700
+        zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+    else 
+        zbump(i+1,:)=(2000-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+    end
+end
+zbump=[zeros(2001,3/Ts) zbump -1.*zbump zeros(2001,xstop-2*xbump_size-3/Ts)];
+zbump=[zeros(300,1501);zbump;zeros(300,1501)];
+ybump1=0:1:2600;
+figure ('name','3d road')
+surf(tout,ybump1,zbump);
+mesh(tout,ybump1,zbump);
+zbump_origin=zbump(:,1:1201);
 %% dotx=Ax+B(u w) 可行很棒！未验证
 % A=[As zeros(32,4);zeros(4,36)];
 % B=[Bs Ds;
