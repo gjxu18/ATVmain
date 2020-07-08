@@ -119,33 +119,35 @@ bump_fl=[tout' xbump_fl'];
 bump_rl=[tout' xbump_rl'];
 bump_fr=[tout' xbump_fr'];
 bump_rr=[tout' xbump_rr'];
+
+bump4=[xbump_fl;xbump_fr;xbump_rl;xbump_rr];
 %% 3D road y以mm为单位
-ybump=0:1:2000;
-zbump=zeros(900+1,xbump_size);
-for i=ybump  
-    if i<300
-        zbump(i+1,:)=(Abump*i/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-    elseif i>=300 && i<600
-        zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-    elseif i>=600 && i<900 
-        zbump(i+1,:)=(900-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-    elseif i>=900 && i<1100
-        zbump(i+1,:)=0.*xbump_t;
-    elseif i>=1100 && i<1400
-        zbump(i+1,:)=(Abump*(i-1100)/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-    elseif i>=1400 && i<1700
-        zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-    else 
-        zbump(i+1,:)=(2000-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
-    end
-end
-zbump=[zeros(2001,3/Ts) zbump -1.*zbump zeros(2001,xstop-2*xbump_size-3/Ts)];
-zbump=[zeros(300,1501);zbump;zeros(300,1501)];
-ybump1=0:1:2600;
-figure ('name','3d road')
-surf(tout,ybump1,zbump);
-mesh(tout,ybump1,zbump);
-zbump_origin=zbump(:,1:1201);
+% ybump=0:1:2000;
+% zbump=zeros(900+1,xbump_size);
+% for i=ybump  
+%     if i<300
+%         zbump(i+1,:)=(Abump*i/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+%     elseif i>=300 && i<600
+%         zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+%     elseif i>=600 && i<900 
+%         zbump(i+1,:)=(900-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+%     elseif i>=900 && i<1100
+%         zbump(i+1,:)=0.*xbump_t;
+%     elseif i>=1100 && i<1400
+%         zbump(i+1,:)=(Abump*(i-1100)/300)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+%     elseif i>=1400 && i<1700
+%         zbump(i+1,:)=(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+%     else 
+%         zbump(i+1,:)=(2000-i)/300*(Abump)/2*(1-cos(2*pi*car_speed/Lbump*xbump_t));
+%     end
+% end
+% zbump=[zeros(2001,3/Ts) zbump -1.*zbump zeros(2001,xstop-2*xbump_size-3/Ts)];
+% zbump=[zeros(300,1501);zbump;zeros(300,1501)];
+% ybump1=0:1:2600;
+% figure ('name','3d road')
+% surf(tout,ybump1,zbump);
+% mesh(tout,ybump1,zbump);
+% zbump_origin=zbump(:,1:1201);
 %% dotx=Ax+B(u w) 可行很棒！未验证
 % A=[As zeros(32,4);zeros(4,36)];
 % B=[Bs Ds;
@@ -248,4 +250,91 @@ Ckalman4(6,20)=1;
 Ckalman4(7,21)=1;
 Ckalman4(8,22)=1;
 Ckalman=[Ckalman;Ckalman4];
+%% MPC bump
+%******连续模型*******%
+Ac=Ap;Bcu=Bp;Bcd=Dp;
+Cmb=zeros(4,14);
+Cmb(1,1)=1;
+Cmb(2,4)=1;
+Cmb(3,5)=1;
+Cmb(4,6)=1;
+Cmb=Cmb*Cp;
+Cc=Cmb;                         %输出矩阵
+Cm=Cmb;                         %测量矩阵（两者可能不同）
+%******离散化*******%
+Ad=expm(Ac*Ts);
+fun=@(x)expm(Ac*x);
+Bu=integral(fun,0,Ts,'ArrayValued',true)*Bcu;
+Bd=integral(fun,0,Ts,'ArrayValued',true)*Bcd;
 
+% [m,n] = size(Ac); %#ok<ASGLU>
+% [m,nb] = size(Bcd); %#ok<ASGLU>
+% s = expm([[Ac Bcd]*Ts; zeros(nb,n+nb)]);
+% Ad = s(1:n,1:n);
+% Bd = s(1:n,n+1:n+nb);
+%*********增量状态空间模型********%
+[xm,xm]=size(Ad);[xm,um]=size(Bu);[xm,dm]=size(Bd);
+[ym,xm]=size(Cc);
+%**********初始化*************%
+[rho]=weighting_MPC;
+p=rho(16);m=rho(17);
+rho_y=[rho(1) rho(4:6)];rho_u=rho(15).*ones(1,4);
+refer=zeros(ym,1);                      %reference自定义  修改
+Refer=zeros(ym*p,xstop);
+[Kmpc,Sx,I,Sd]=Model_Predictive_Control(Ad,Bu,Bd,Cc,Ts,p,m,rho_y,rho_u);
+%**********求delta d road**********%
+road4=bump4;
+dk_road=zeros(4,xstop);
+for i=2:xstop
+    dk_road(:,i)=road4(:,i)-road4(:,i-1);
+end
+%*************求测量值ym***********%
+x=zeros(xm,xstop);
+yc=zeros(ym,xstop);
+Ym=zeros(ym,xstop);
+% x(:,i)=Cm/Ym(:,i);
+%*********计算误差与控制量变化量***********%
+Ep=zeros(ym*p,xstop);
+dx=zeros(xm,xstop);
+du=zeros(um,xstop);
+for i=2:xstop-1
+%     Ep(:,1+1)=Refer(:,1+1)-Sx*dx(:,1)-I*yc(:,1)-Sd*dk_road(:,1);
+%     du(:,1)=Kmpc*Ep(:,1+1);
+%     dx(:,1+1)=Ad*dx(:,1)+Bu*du(:,1)+Bd*dk_road(:,1);
+%     yc(:,1+1)=Cc*dx(:,1)+zeros(ym,1);
+    
+    Ep(:,i+1)=Refer(:,i+1)-Sx*dx(:,i)-I*yc(:,i)-Sd*dk_road(:,i);
+    du(:,i)=Kmpc*Ep(:,i+1);
+    dx(:,i+1)=Ad*dx(:,i)+Bu*du(:,i)+Bd*dk_road(:,i);
+    yc(:,i+1)=Cc*dx(:,i)+yc(:,i-1);
+end
+for i=1:xstop-1
+    x(:,i+1)=x(:,i)+dx(:,i+1);
+end
+%***********被动比较***********%
+xp=zeros(xm,xstop);
+yp=zeros(ym,xstop);
+for i=1:xstop
+    xp(:,i+1)=Ad*xp(:,i)+Bd*road4(:,i);
+    yp(:,i)=Cc*xp(:,i);
+end
+
+figure('name','compare')
+subplot(2,2,1)
+plot(tout,yp(1,:),tout,yc(1,:));
+subplot(2,2,2)
+plot(tout,yp(2,:),tout,yc(2,:));
+subplot(2,2,3)
+plot(tout,yp(3,:),tout,yc(3,:));
+subplot(2,2,4)
+plot(tout,yp(4,:),tout,yc(4,:));
+
+figure('name','u_mpc')
+subplot(2,2,1)
+plot(tout,x(19,:));
+subplot(2,2,2)
+plot(tout,x(20,:));
+subplot(2,2,3)
+plot(tout,x(21,:));
+subplot(2,2,4)
+plot(tout,x(22,:));
