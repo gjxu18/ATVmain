@@ -63,7 +63,7 @@ noise2=[zeros(xdelay,1);noise1];
 noise_f=[tout' noise1];
 noise_r=[tout' noise2(1:xstop)];
 
-figure('name','class road')
+figure('name','class noise')
 subplot(2,2,1)
 plot(tout,noise_f(:,2));
 subplot(2,2,2)
@@ -72,26 +72,29 @@ subplot(2,2,3)
 plot(tout,noise_r(:,2));
 subplot(2,2,4)
 plot(tout,noise_r(:,2));
+noise4=[noise1';noise1';noise2(1:xstop)';noise2(1:xstop)'];
 %% sin波形路面
 a_max=0.1342;
-sin_f=a_max*sin(2*pi/6*tout');
-sin_r=[zeros(xdelay,1);sin_f];
-sin_0=0.*tout';
+sin_f=a_max*sin(2*pi/6*tout);
+sin_r=[zeros(1,xdelay) sin_f];
+sin_r=sin_r(:,1:xstop);
+sin_00=0.*tout;
 
-sin_f=[tout' sin_f];
-sin_r=[tout' sin_r(1:xstop)];
-sin_0=[tout' sin_0];
+sin_fl=[tout' sin_f'];
+sin_rl=[tout' sin_r(1:xstop)'];
+sin_0=[tout' sin_00'];
 
 figure('name','sin road')
 subplot(2,2,1)
-plot(tout,sin_f(:,2));
+plot(tout,sin_f);
 subplot(2,2,2)
-plot(tout,sin_f(:,2));
+plot(tout,sin_00);
 subplot(2,2,3)
-plot(tout,sin_r(:,2));
+plot(tout,sin_r);
 subplot(2,2,4)
-plot(tout,sin_r(:,2));
+plot(tout,sin_00);
 
+sin4=[sin_f;sin_00;sin_r;sin_00];
 %% Bump Road
 Abump=0.1342; %坑、包的幅值
 Lbump=3;    %坑、包的长度
@@ -153,16 +156,15 @@ bump4=[xbump_fl;xbump_fr;xbump_rl;xbump_rr];
 % B=[Bs Ds;
 %     zeros(4,8)];
 % C=[Cp zeros(14,6)];
-%% +4
+%% x26 \dotx=Ax+Bu+Dw
 A=[Ap Dp;
     zeros(4,SXp) Aw];
 B=[Bp;zeros(4,4)];
 D=[zeros(SXp,4);Iw];
 C=C26;
 [SX,SY]=size(A);
-%% control matrix
-[ro]=weighting_JVC;
 %% lqr
+[ro]=weighting_JVC;
 % [Q,R]=optimal_control_matrix_JVC_no_w(parameter,A,B,SX,SY,ro);
 Q=eye(14);R=eye(4);
 for i=1:14
@@ -223,7 +225,7 @@ Nn=zeros(4,14);
 sys=ss(A,[B D],C,Dn);
 [kest,L,P]=kalman(sys,Qn,Rn,Nn);
 
-%%
+%% Ckalman
 % Q=eye()
 ob=obsv(A,C);
 obb=rank(ob);
@@ -250,7 +252,7 @@ Ckalman4(6,20)=1;
 Ckalman4(7,21)=1;
 Ckalman4(8,22)=1;
 Ckalman=[Ckalman;Ckalman4];
-%% MPC bump
+%% MPC x22 无约束 无估计
 %******连续模型*******%
 Ac=Ap;Bcu=Bp;Bcd=Dp;
 Cmb=zeros(4,14);
@@ -266,12 +268,6 @@ Ad=expm(Ac*Ts);
 fun=@(x)expm(Ac*x);
 Bu=integral(fun,0,Ts,'ArrayValued',true)*Bcu;
 Bd=integral(fun,0,Ts,'ArrayValued',true)*Bcd;
-
-% [m,n] = size(Ac); %#ok<ASGLU>
-% [m,nb] = size(Bcd); %#ok<ASGLU>
-% s = expm([[Ac Bcd]*Ts; zeros(nb,n+nb)]);
-% Ad = s(1:n,1:n);
-% Bd = s(1:n,n+1:n+nb);
 %*********增量状态空间模型********%
 [xm,xm]=size(Ad);[xm,um]=size(Bu);[xm,dm]=size(Bd);
 [ym,xm]=size(Cc);
@@ -284,6 +280,7 @@ Refer=zeros(ym*p,xstop);
 [Kmpc,Sx,I,Sd]=Model_Predictive_Control(Ad,Bu,Bd,Cc,Ts,p,m,rho_y,rho_u);
 %**********求delta d road**********%
 road4=bump4;
+% road4=sin4;
 dk_road=zeros(4,xstop);
 for i=2:xstop
     dk_road(:,i)=road4(:,i)-road4(:,i-1);
@@ -297,24 +294,22 @@ Ym=zeros(ym,xstop);
 Ep=zeros(ym*p,xstop);
 dx=zeros(xm,xstop);
 du=zeros(um,xstop);
-for i=2:xstop-1
-%     Ep(:,1+1)=Refer(:,1+1)-Sx*dx(:,1)-I*yc(:,1)-Sd*dk_road(:,1);
-%     du(:,1)=Kmpc*Ep(:,1+1);
-%     dx(:,1+1)=Ad*dx(:,1)+Bu*du(:,1)+Bd*dk_road(:,1);
-%     yc(:,1+1)=Cc*dx(:,1)+zeros(ym,1);
-    
+u=zeros(um,xstop);
+for i=1:xstop-1 
     Ep(:,i+1)=Refer(:,i+1)-Sx*dx(:,i)-I*yc(:,i)-Sd*dk_road(:,i);
     du(:,i)=Kmpc*Ep(:,i+1);
+    if i==1
+        yc(:,i+1)=Cc*dx(:,i)+yc(:,i);
+    else
+        yc(:,i+1)=Cc*dx(:,i)+yc(:,i-1);
+    end
     dx(:,i+1)=Ad*dx(:,i)+Bu*du(:,i)+Bd*dk_road(:,i);
-    yc(:,i+1)=Cc*dx(:,i)+yc(:,i-1);
-end
-for i=1:xstop-1
     x(:,i+1)=x(:,i)+dx(:,i+1);
 end
 %***********被动比较***********%
 xp=zeros(xm,xstop);
 yp=zeros(ym,xstop);
-for i=1:xstop
+for i=1:xstop-1
     xp(:,i+1)=Ad*xp(:,i)+Bd*road4(:,i);
     yp(:,i)=Cc*xp(:,i);
 end
@@ -322,12 +317,16 @@ end
 figure('name','compare')
 subplot(2,2,1)
 plot(tout,yp(1,:),tout,yc(1,:));
+title('\alpha_w');
 subplot(2,2,2)
 plot(tout,yp(2,:),tout,yc(2,:));
+title('z');
 subplot(2,2,3)
 plot(tout,yp(3,:),tout,yc(3,:));
+title('\theta');
 subplot(2,2,4)
 plot(tout,yp(4,:),tout,yc(4,:));
+title('\phi');
 
 figure('name','u_mpc')
 subplot(2,2,1)
@@ -338,3 +337,4 @@ subplot(2,2,3)
 plot(tout,x(21,:));
 subplot(2,2,4)
 plot(tout,x(22,:));
+

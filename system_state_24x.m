@@ -1,5 +1,5 @@
 function [A,B,D,C1,C2,C3,C34]=system_state0623(parameter)
-%% ms=0；LPF；30个状态变量（u1,u1'）;jacobian；22x
+%% ms=0；LPF；30个状态变量（u1,u1'）;jacobian；22x;y里的deg
 syms mb mp ms muf mur ls1o ls2o ls3o ls4o Ca1 Ca2 Ca3 Ca4 ktf ktr...
     a b Bf Br...%Bf Br whell-track a=b=1/2wheelbase
     G Csf Csr u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 ksf ksr h Jxx Jyy Jzz Jw1 Jw2 Jw3 Jw4...
