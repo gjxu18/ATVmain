@@ -1,4 +1,4 @@
-%% MPC x26 无约束 有估计 
+%% MPC x26 无约束 有估计 估计路面
 %******连续模型*******%
 Ac=A;Bcu=B;Bcd=D;
 Cmb=zeros(4,14);
@@ -31,15 +31,15 @@ for i=1:4
 end
 Rk=0.00001.*eye(ym);Nn=zeros(dm,ym);
 %**********求delta d road w4**********%
-% road4=bump4;
-% for i=1:xstop
-%     if i==xstop
-%         w4(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(road4(:,i)-Ad(xm-4+1:xm,xm-4+1:xm)*road4(:,i));
-%     else
-%         w4(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(road4(:,i+1)-Ad(xm-4+1:xm,xm-4+1:xm)*road4(:,i));
-%     end
-% end
-w4=noise4;
+road4=bump4;
+for i=1:xstop
+    if i==xstop
+        w4(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(road4(:,i)-Ad(xm-4+1:xm,xm-4+1:xm)*road4(:,i));
+    else
+        w4(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(road4(:,i+1)-Ad(xm-4+1:xm,xm-4+1:xm)*road4(:,i));
+    end
+end
+% w4=noise4;
 dk_w=zeros(4,xstop);
 for i=2:xstop
     dk_w(:,i)=w4(:,i)-w4(:,i-1);
@@ -61,7 +61,6 @@ dx_hat=zeros(xm,xstop);
 yc_hat=zeros(ym,xstop);
 xp=zeros(xm,xstop);
 yp=zeros(ym,xstop);
-dw4_hat=zeros(dm,xstop);
 for i=1:xstop-1
     %***********得到测量值***********%
     Ym(:,i)=Cc*Xm(:,i)+noise_vk(:,i);
@@ -77,20 +76,15 @@ for i=1:xstop-1
     else
         dx_hat(:,i)=x_hat(:,i)-x_hat(:,i-1);
     end
-    if i==1
-          dw4_hat(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(dx_hat(xm-4+1:xm,i)-Ad(xm-4+1:xm,xm-4+1:xm)*dx_hat(xm-4+1:xm,i));
-    else
-          dw4_hat(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(dx_hat(xm-4+1:xm,i)-Ad(xm-4+1:xm,xm-4+1:xm)*dx_hat(xm-4+1:xm,i-1));
-    end
     %*************计算误差***********%
-    Ep(:,i+1)=Refer(:,i+1)-Sx*dx_hat(:,i)-I*yc(:,i)-Sd*dw4_hat(:,i);
+    Ep(:,i+1)=Refer(:,i+1)-Sx*dx_hat(:,i)-I*yc(:,i)-Sd*dk_road(:,i);
     du(:,i)=Kmpc*Ep(:,i+1);
     if i==1
         u(:,i)=u(:,i)+du(:,i);%u(-1)=0
     else
         u(:,i)=u(:,i-1)+du(:,i);
     end 
-    Xm(:,i+1)=Ad*x_hat(:,i)+Bu*u(:,i)+Bd*w4(:,i);
+    Xm(:,i+1)=Ad*x_hat(:,i)+Bd*w4(:,i)+Bu*u(:,i);
         %***********被动比较***********%
     xp(:,i+1)=Ad*xp(:,i)+Bd*w4(:,i);%+Bu*u(:,i);
     yp(:,i)=Cc*xp(:,i);

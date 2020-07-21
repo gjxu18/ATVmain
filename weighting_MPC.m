@@ -1,8 +1,8 @@
 function [rho]=weighting_MPC
-syms ro1 ro2 ro3 ro4 ro5 ro6 ro7 ro8 ro9 ro10 ro11 ro12 ro13 ro14 ro15 ro16 ro17 ro18 ro19 ro20
-ro=[ro1,ro2,ro3,ro4,ro5,ro6,ro7,ro8,ro9,ro10,ro11,ro12,ro13,ro14,ro15,ro16,ro17,ro18,ro19,ro20]; 
+syms ro1 ro2 ro3 ro4 ro5 ro6 ro7 ro8 ro9 ro10 ro11 ro12 ro13 ro14 ro15 ro16 ro17 ro18 ro19 ro20 ro21 ro22 ro23 ro24 ro25
+ro=[ro1,ro2,ro3,ro4,ro5,ro6,ro7,ro8,ro9,ro10,ro11,ro12,ro13,ro14,ro15,ro16,ro17,ro18,ro19,ro20,ro21,ro22,ro23,ro24,ro25]; 
 %% 0708 mpc bump
-ro1 = 0;    %ddz
+ro1 = 1;    %ddz
 ro2 = 0;      %ddtheta
 ro3 = 0 ;    %ddphi
 ro4 = 1;    %zb
@@ -17,6 +17,12 @@ ro16 = 1;
 ro17 = 1;
 ro18 = 1;       %u4
 
-ro19 = 25;      %p H
-ro20 = 5;       %m H
+ro19 = 10;      %p H
+ro20 = 2;       %m H
+%*********Ô¼Êø*************%
+ro21 = 0.125;   %delta_u
+ro22 = 0.1;     %u max 
+ro23 = -0.1;     %u min
+ro24 = 100;     %Y max
+ro25 = -100;    %Y min
 rho = eval(ro);

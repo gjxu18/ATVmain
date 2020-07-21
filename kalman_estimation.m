@@ -1,10 +1,10 @@
 %% 20200718 离散 kalman状态估计 ok！ 
 %******连续模型*******%
 Ac=A;Bcu=B;Bcd=D;
-Cmb=zeros(4,14);
+Cmb=zeros(3,14);
 Cmb(1,1)=1;
-Cmb(2,4)=1;
-Cmb(3,5)=1;
+Cmb(2,5)=1;
+Cmb(3,6)=1;
 Cmb(4,6)=1;
 Cmb=Cmb*C;
 Cc=Cmb;                         %输出矩阵
@@ -18,9 +18,16 @@ Bd=integral(fun,0,Ts,'ArrayValued',true)*Bcd;
 [xm,xm]=size(Ad);[xm,um]=size(Bu);[xm,dm]=size(Bd);
 [ym,xm]=size(Cc);Du=zeros(ym,um+dm);
 %**********初始化*************%
-Qk=30.*eye(dm);Rk=0.00001.*eye(ym);Nn=zeros(dm,ym);
+[rho_kal]=weighting_Kalman;
+Qk=zeros(dm,dm);
+for i=1:dm
+    Qk(i,i)=rho_kal(i);
+end
+Rk=0.00001.*eye(ym);Nn=zeros(dm,ym);
 %**********求delta d road**********%
 road4=bump4;
+% road4=sin4;
+w4=zeros(dm,xstop);
 for i=1:xstop
     if i==xstop
         w4(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(road4(:,i)-Ad(xm-4+1:xm,xm-4+1:xm)*road4(:,i));
@@ -28,7 +35,8 @@ for i=1:xstop
         w4(:,i)=Bd(xm-4+1:xm,1:dm)^(-1)*(road4(:,i+1)-Ad(xm-4+1:xm,xm-4+1:xm)*road4(:,i));
     end
 end
-w4=noise4;
+% w4=noise4;
+w42sim=[tout' w4'];
 dk_w=zeros(4,xstop);
 for i=2:xstop
     dk_w(:,i)=w4(:,i)-w4(:,i-1);
@@ -56,8 +64,12 @@ for i=1:xstop-1
         x(:,i+1)=Ad*x_hat(:,i)+Bu*u(:,i);%+Bd*w4(:,i); 
         yc(:,i)=Cc*x_hat(:,i);  
 end
-
-figure('name','class road compare')
+Croad=zeros(dm,xm);
+Croad(1,23)=1;
+Croad(2,24)=1;
+Croad(3,25)=1;
+Croad(4,26)=1;
+figure('name','road compare')
 subplot(2,2,1)
 plot(tout,xp(23,:),tout,x_hat(23,:));
 subplot(2,2,2)
@@ -78,5 +90,5 @@ subplot(2,2,3)
 plot(tout,Ym(3,:),tout,yc(3,:));
 title('\theta');
 subplot(2,2,4)
-plot(tout,Ym(4,:),tout,yc(4,:));
-title('\phi');
+% plot(tout,Ym(4,:),tout,yc(4,:));
+% title('\phi');

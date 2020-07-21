@@ -163,6 +163,8 @@ B=[Bp;zeros(4,4)];
 D=[zeros(SXp,4);Iw];
 C=C26;
 [SX,SY]=size(A);
+noise_C=wgn(xstop,1,0.01,'linear');
+noise_C=[tout', noise_C];
 %% lqr
 [ro]=weighting_JVC;
 % [Q,R]=optimal_control_matrix_JVC_no_w(parameter,A,B,SX,SY,ro);
@@ -183,11 +185,11 @@ Ac=A-B*K;
 % K1=R^(-1)*Bp'*Pk;
 % Ac=A-B*K;
 cun=size(Ac);
-Cu=zeros(4,cun(1)); %得到u'
-Cu(1,19)=1;
-Cu(2,20)=1;
-Cu(3,21)=1;
-Cu(4,22)=1;
+Clqr_u=zeros(4,cun(1)); %得到u'
+Clqr_u(1,19)=1;
+Clqr_u(2,20)=1;
+Clqr_u(3,21)=1;
+Clqr_u(4,22)=1;
 %% lqg
 Dn=zeros(14,8);
 % Qn=35.*eye(4);   0704
@@ -263,6 +265,7 @@ Cmb(4,6)=1;
 Cmb=Cmb*Cp;
 Cc=Cmb;                         %输出矩阵
 Cm=Cmb;                         %测量矩阵（两者可能不同）
+Cb=Cmb;
 %******离散化*******%
 Ad=expm(Ac*Ts);
 fun=@(x)expm(Ac*x);
@@ -315,7 +318,6 @@ for i=1:xstop-1
     xp(:,i+1)=Ad*xp(:,i)+Bd*road4(:,i);%+Bu*u(:,i);
     yp(:,i)=Cc*xp(:,i);
 end
-
 figure('name','compare')
 subplot(2,2,1)
 plot(tout,yp(1,:),tout,yc(1,:));
