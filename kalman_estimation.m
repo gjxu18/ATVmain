@@ -1,4 +1,4 @@
-%% kalman 
+%% 20200718 离散 kalman状态估计 ok！ 
 %******连续模型*******%
 Ac=A;Bcu=B;Bcd=D;
 Cmb=zeros(4,14);
@@ -14,17 +14,11 @@ Ad=expm(Ac*Ts);
 fun=@(x)expm(Ac*x);
 Bu=integral(fun,0,Ts,'ArrayValued',true)*Bcu;
 Bd=integral(fun,0,Ts,'ArrayValued',true)*Bcd;
-%*********增量状态空间模型********%
+%*********状态空间模型********%
 [xm,xm]=size(Ad);[xm,um]=size(Bu);[xm,dm]=size(Bd);
 [ym,xm]=size(Cc);Du=zeros(ym,um+dm);
 %**********初始化*************%
-[rho]=weighting_MPC;
-p=rho(16);m=rho(17);
-rho_y=[rho(1) rho(4:6)];rho_u=rho(15).*ones(1,4);
-refer=zeros(ym,1);                      %reference自定义  修改
-Refer=zeros(ym*p,xstop);
-[Kmpc,Sx,I,Sd]=Model_Predictive_Control(Ad,Bu,Bd,Cc,Ts,p,m,rho_y,rho_u);
-Qk=0.001.*eye(dm);Rk=0.0001.*eye(ym);Nn=zeros(dm,ym);
+Qk=30.*eye(dm);Rk=0.00001.*eye(ym);Nn=zeros(dm,ym);
 %**********求delta d road**********%
 road4=bump4;
 for i=1:xstop
@@ -43,45 +37,25 @@ end
 x=zeros(xm,xstop);
 yc=zeros(ym,xstop);
 Ym=zeros(ym,xstop);
-noise_vk=wgn(ym,xstop,0.0001,'linear');
-%*********计算误差与控制量变化量***********%
-Ep=zeros(ym*p,xstop);
-dx=zeros(xm,xstop);
-du=zeros(um,xstop);
+noise_vk=wgn(ym,xstop,0.000001,'linear');
 u=zeros(um,xstop);
 P_k=0.01.*eye(xm);
-Pk=zeros(xm,xm);
 x_hat=zeros(xm,xstop);
-yc_hat=zeros(ym,xstop);
-% Plant = ss(Ad,[Bu Bd],Cc,Du,Ts);
-% [kest,L,P]=kalman(Plant,Qn,Rn,Nn);
 xp=zeros(xm,xstop);
 yp=zeros(ym,xstop);
 for i=1:xstop-1
-    %**************Kalman_***********% 
-        Ym(:,i)=Cm*x(:,i)+noise_vk(:,i);
-        x(:,i)=Ad*x_hat(:,i-1)+Bu*u(:,i);%+Bd*w4(:,i);
-        P_k=Ad*Pk*Ad'+Bd*Qk*Bd';
+    %***********被动***********%
+    xp(:,i+1)=Ad*xp(:,i)+Bd*w4(:,i)+Bu*u(:,i);
+    yp(:,i)=Cc*xp(:,i);
+    Ym(:,i)=yp(:,i)+noise_vk(:,i);
+    %**************Kalman_***********%        
         K_kalman=P_k*Cm'/(Cm*P_k*Cm'+Rk);
         x_hat(:,i)=x(:,i)+K_kalman*(Ym(:,i)-Cm*x(:,i));
         Pk=(eye(xm)-K_kalman*Cm)*P_k;
-        yc(:,i)=Cc*x_hat(:,i);
-        
-%     %*************计算误差***********%
-%     if i==1
-%         dx(:,i)=x_hat(:,i)-x(:,i);
-%     else
-%         dx(:,i)=x_hat(:,i)-x_hat(:,i-1);
-%     end
-%     Ep(:,i+1)=Refer(:,i+1)-Sx*dx(:,i)-I*yc(:,i);%-Sd*dk_road(:,i);
-%     du(:,i)=Kmpc*Ep(:,i+1);
-%     u(:,i)=u(:,i-1)+du(:,i);
-%     x(:,i+1)=Ad*x(:,i)+Bu*u(:,i);
-    %***********被动比较***********%
-    xp(:,i+1)=Ad*xp(:,i)+Bd*w4(:,i)+Bu*u(:,i);
-    yp(:,i)=Cc*xp(:,i);
+        P_k=Ad*Pk*Ad'+Bd*Qk*Bd';
+        x(:,i+1)=Ad*x_hat(:,i)+Bu*u(:,i);%+Bd*w4(:,i); 
+        yc(:,i)=Cc*x_hat(:,i);  
 end
-
 
 figure('name','class road compare')
 subplot(2,2,1)
@@ -106,13 +80,3 @@ title('\theta');
 subplot(2,2,4)
 plot(tout,Ym(4,:),tout,yc(4,:));
 title('\phi');
-
-% figure('name','u_mpc')
-% subplot(2,2,1)
-% plot(tout,x(19,:));
-% subplot(2,2,2)
-% plot(tout,x(20,:));
-% subplot(2,2,3)
-% plot(tout,x(21,:));
-% subplot(2,2,4)
-% plot(tout,x(22,:));

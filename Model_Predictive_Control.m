@@ -43,7 +43,9 @@ for i=1:m
 end
 %***********开环优化************%
 Ik=[eye(um) zeros(um,um*(m-1))];
-Kmpc=Ik*pinv(((Su')*(Rho_y')*Rho_y*Su+(Rho_u')*Rho_u))*(Su')*(Rho_y')*Rho_y;
+Kmpc=Ik*pinv(((Su')*(Rho_y')*Rho_y*Su+(Rho_u')*Rho_u),1e-5)*(Su')*(Rho_y')*Rho_y;
+
+
 
 
 

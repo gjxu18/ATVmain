@@ -273,8 +273,8 @@ Bd=integral(fun,0,Ts,'ArrayValued',true)*Bcd;
 [ym,xm]=size(Cc);
 %**********初始化*************%
 [rho]=weighting_MPC;
-p=rho(16);m=rho(17);
-rho_y=[rho(1) rho(4:6)];rho_u=rho(15).*ones(1,4);
+p=rho(19);m=rho(20);
+rho_y=[rho(1) rho(4:6)];rho_u=[rho(15) rho(16) rho(17) rho(18)] ;
 refer=zeros(ym,1);                      %reference自定义  修改
 Refer=zeros(ym*p,xstop);
 [Kmpc,Sx,I,Sd]=Model_Predictive_Control(Ad,Bu,Bd,Cc,Ts,p,m,rho_y,rho_u);
@@ -288,29 +288,31 @@ end
 %*************求测量值ym***********%
 x=zeros(xm,xstop);
 yc=zeros(ym,xstop);
-Ym=zeros(ym,xstop);
-% x(:,i)=Cm/Ym(:,i);
 %*********计算误差与控制量变化量***********%
 Ep=zeros(ym*p,xstop);
 dx=zeros(xm,xstop);
 du=zeros(um,xstop);
 u=zeros(um,xstop);
+xp=zeros(xm,xstop);
+yp=zeros(ym,xstop);
 for i=1:xstop-1 
+    if i==1
+        dx(:,i)=x(:,i)-x(:,i);%x(-1)=0
+    else
+        dx(:,i)=x(:,i)-x(:,i-1);
+    end
+    yc(:,i)=Cc*x(:,i);
+    
     Ep(:,i+1)=Refer(:,i+1)-Sx*dx(:,i)-I*yc(:,i)-Sd*dk_road(:,i);
     du(:,i)=Kmpc*Ep(:,i+1);
     if i==1
-        yc(:,i+1)=Cc*dx(:,i)+yc(:,i);
+        u(:,i)=u(:,i)+du(:,i);%u(-1)=0
     else
-        yc(:,i+1)=Cc*dx(:,i)+yc(:,i-1);
-    end
-    dx(:,i+1)=Ad*dx(:,i)+Bu*du(:,i)+Bd*dk_road(:,i);
-    x(:,i+1)=x(:,i)+dx(:,i+1);
-end
-%***********被动比较***********%
-xp=zeros(xm,xstop);
-yp=zeros(ym,xstop);
-for i=1:xstop-1
-    xp(:,i+1)=Ad*xp(:,i)+Bd*road4(:,i);
+        u(:,i)=u(:,i-1)+du(:,i);
+    end   
+    x(:,i+1)=Ad*x(:,i)+Bu*u(:,i)+Bd*road4(:,i);
+    %***********被动比较***********%
+    xp(:,i+1)=Ad*xp(:,i)+Bd*road4(:,i);%+Bu*u(:,i);
     yp(:,i)=Cc*xp(:,i);
 end
 
